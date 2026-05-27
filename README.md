@@ -1,16 +1,31 @@
-# AirBnB Clone - The Console
+# AirBnB Clone - The Console (v2)
+
+## Team
+
+| Name | GitHub |
+|------|--------|
+| Gania Kayumba | [Gania-Isaro](https://github.com/Gania-Isaro) |
+| Jessica Bizima | [Jessica-Bizima](https://github.com/Jessica-Bizima) |
 
 ## Description
 
-This project is the first step toward building a full web application that clones AirBnB.
-It includes a command interpreter to manage the objects of the project, a storage engine using JSON, and several data models.
+This project is the second step toward building a full web application that clones AirBnB.
+It builds on v1 by adding:
+- MySQL database storage using SQLAlchemy ORM
+- Dual storage engine support (FileStorage and DBStorage)
+- Environment-variable-driven configuration
+- Extended console supporting parameterised object creation
 
-The command interpreter allows you to:
-- Create new objects (User, Place, etc.)
-- Retrieve objects from a file
-- Update attributes of an object
-- Destroy an object
-- List all objects or objects by class
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `HBNB_ENV` | Running environment: `dev` or `test` |
+| `HBNB_MYSQL_USER` | MySQL username |
+| `HBNB_MYSQL_PWD` | MySQL password |
+| `HBNB_MYSQL_HOST` | MySQL host (default: localhost) |
+| `HBNB_MYSQL_DB` | MySQL database name |
+| `HBNB_TYPE_STORAGE` | Storage type: `file` or `db` |
 
 ## The Command Interpreter
 
@@ -42,7 +57,7 @@ Type commands at the `(hbnb)` prompt.
 
 **Commands:**
 
-- `create <class>` - Creates a new instance and prints the id
+- `create <class> [key=value ...]` - Creates a new instance with optional params and prints the id
 - `show <class> <id>` - Prints the string representation of an instance
 - `destroy <class> <id>` - Deletes an instance
 - `all [class]` - Prints all instances, or all of a given class
@@ -57,20 +72,58 @@ Type commands at the `(hbnb)` prompt.
 
 ```
 $ ./console.py
-(hbnb) create BaseModel
+(hbnb) create State name="California"
 49faff9a-6318-451f-87b6-910505c55907
-(hbnb) show BaseModel 49faff9a-6318-451f-87b6-910505c55907
-[BaseModel] (49faff9a-6318-451f-87b6-910505c55907) {'id': '49faff9a-6318-451f-87b6-910505c55907', ...}
-(hbnb) all BaseModel
-["[BaseModel] (49faff9a-6318-451f-87b6-910505c55907) {...}"]
-(hbnb) update BaseModel 49faff9a-6318-451f-87b6-910505c55907 first_name "Betty"
-(hbnb) destroy BaseModel 49faff9a-6318-451f-87b6-910505c55907
-(hbnb) show BaseModel 49faff9a-6318-451f-87b6-910505c55907
-** no instance found **
+(hbnb) all State
+["[State] (49faff9a-6318-451f-87b6-910505c55907) {'name': 'California', ...}"]
 (hbnb) quit
 $
+```
+
+**With DBStorage:**
+
+```
+$ HBNB_MYSQL_USER=hbnb_dev HBNB_MYSQL_PWD=hbnb_dev_pwd \
+  HBNB_MYSQL_HOST=localhost HBNB_MYSQL_DB=hbnb_dev_db \
+  HBNB_TYPE_STORAGE=db ./console.py
+(hbnb) create State name="California"
+```
+
+## Storage
+
+### FileStorage (default)
+Serializes/deserializes objects to/from `file.json`.
+
+### DBStorage
+Uses MySQL via SQLAlchemy. Configure with environment variables above.
+
+**Setup development DB:**
+```bash
+cat setup_mysql_dev.sql | mysql -hlocalhost -uroot -p
+```
+
+**Setup test DB:**
+```bash
+cat setup_mysql_test.sql | mysql -hlocalhost -uroot -p
+```
+
+## Running Tests
+
+**FileStorage:**
+```bash
+python3 -m unittest discover tests
+```
+
+**DBStorage:**
+```bash
+HBNB_ENV=test HBNB_MYSQL_USER=hbnb_test HBNB_MYSQL_PWD=hbnb_test_pwd \
+HBNB_MYSQL_HOST=localhost HBNB_MYSQL_DB=hbnb_test_db \
+HBNB_TYPE_STORAGE=db python3 -m unittest discover tests
 ```
 
 ## Authors
 
 See the [AUTHORS](./AUTHORS) file.
+
+### Original Authors (v1)
+- Gania Isaro
