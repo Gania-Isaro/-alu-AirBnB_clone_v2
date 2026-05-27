@@ -4,18 +4,33 @@ import json
 
 
 class FileStorage:
-    """Serializes instances to a JSON file and deserializes back."""
+    """Serializes instances to a JSON file and deserializes back.
+
+    Attributes:
+        __file_path (str): Path to the JSON file.
+        __objects (dict): Dictionary of all stored objects.
+    """
 
     __file_path = "file.json"
     __objects = {}
 
-    def all(self):
-        """Return the dictionary of all stored objects.
+    def all(self, cls=None):
+        """Return stored objects, optionally filtered by class.
+
+        Args:
+            cls: Optional class (or class name string) to filter by.
 
         Returns:
-            dict: All objects stored in __objects.
+            dict: All objects, or only those matching cls if provided.
         """
-        return FileStorage.__objects
+        if cls is None:
+            return FileStorage.__objects
+        result = {}
+        for key, obj in FileStorage.__objects.items():
+            cls_name = cls if isinstance(cls, str) else cls.__name__
+            if type(obj).__name__ == cls_name:
+                result[key] = obj
+        return result
 
     def new(self, obj):
         """Set obj in __objects with key <class name>.id.
@@ -63,3 +78,14 @@ class FileStorage:
                     FileStorage.__objects[key] = classes[class_name](**value)
         except FileNotFoundError:
             pass
+
+    def delete(self, obj=None):
+        """Delete obj from __objects if it exists.
+
+        Args:
+            obj: The object to delete. Does nothing if obj is None.
+        """
+        if obj is None:
+            return
+        key = "{}.{}".format(type(obj).__name__, obj.id)
+        FileStorage.__objects.pop(key, None)
