@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """This module defines the entry point of the command interpreter."""
 import cmd
+import re
 from models import storage
 from models.base_model import BaseModel
 from models.user import User
@@ -41,17 +42,59 @@ class HBNBCommand(cmd.Cmd):
         pass
 
     def do_create(self, line):
-        """Create a new instance, save it, and print the id.
+        """Create a new instance with optional key=value parameters.
 
-        Usage: create <class name>
+        Usage: create <class name> [<key>=<value> ...]
+
+        Value formats accepted:
+          String : <key>="<value>"  (underscores become spaces)
+          Float  : <key>=<unit>.<decimal>
+          Integer: <key>=<number>
+
+        Invalid parameters are silently skipped.
         """
         if not line:
             print("** class name missing **")
             return
-        if line not in CLASSES:
+        args = line.split()
+        class_name = args[0]
+        if class_name not in CLASSES:
             print("** class doesn't exist **")
             return
-        obj = CLASSES[line]()
+
+        kwargs = {}
+        for param in args[1:]:
+            if "=" not in param:
+                continue
+            key, _, raw = param.partition("=")
+            if not key or not raw:
+                continue
+
+            if raw.startswith('"'):
+                # String: must start AND end with a double-quote
+                if not raw.endswith('"') or len(raw) < 2:
+                    continue
+                # Strip surrounding quotes
+                value = raw[1:-1]
+                # Replace escaped quotes with actual quotes
+                value = value.replace('\\"', '"')
+                # Replace underscores with spaces
+                value = value.replace('_', ' ')
+                kwargs[key] = value
+            elif '.' in raw:
+                # Float
+                try:
+                    kwargs[key] = float(raw)
+                except ValueError:
+                    continue
+            else:
+                # Integer
+                try:
+                    kwargs[key] = int(raw)
+                except ValueError:
+                    continue
+
+        obj = CLASSES[class_name](**kwargs)
         obj.save()
         print(obj.id)
 
@@ -144,13 +187,11 @@ class HBNBCommand(cmd.Cmd):
 
         # Strip surrounding quotes from string values
         if attr_value.startswith('"'):
-            # Rejoin in case there are spaces inside quotes
             joined = line.split(None, 3)
             if len(joined) >= 4:
                 attr_value = joined[3]
             if attr_value.startswith('"'):
                 attr_value = attr_value.lstrip('"')
-                # Find the closing quote
                 quote_end = attr_value.find('"')
                 if quote_end != -1:
                     attr_value = attr_value[:quote_end]
@@ -163,7 +204,6 @@ class HBNBCommand(cmd.Cmd):
             except (ValueError, TypeError):
                 pass
         else:
-            # Try int, then float, else keep string
             try:
                 attr_value = int(attr_value)
             except ValueError:
