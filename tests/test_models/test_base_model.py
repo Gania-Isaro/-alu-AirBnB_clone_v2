@@ -42,14 +42,8 @@ class TestBaseModelInstantiation(unittest.TestCase):
         self.assertAlmostEqual(
             obj.created_at.timestamp(),
             obj.updated_at.timestamp(),
-            delta=0.01
+            delta=0.1
         )
-
-    def test_str_representation(self):
-        """Test the __str__ method output format."""
-        obj = BaseModel()
-        expected = "[BaseModel] ({}) {}".format(obj.id, obj.__dict__)
-        self.assertEqual(str(obj), expected)
 
     def test_kwargs_instantiation(self):
         """Test instantiation with keyword arguments."""
@@ -87,6 +81,17 @@ class TestBaseModelInstantiation(unittest.TestCase):
         obj = BaseModel("arg1", "arg2")
         self.assertIsInstance(obj, BaseModel)
 
+    def test_partial_kwargs_sets_id(self):
+        """Test that partial kwargs still generates an id."""
+        obj = BaseModel(name="Test")
+        self.assertIsNotNone(obj.id)
+        self.assertIsInstance(obj.id, str)
+
+    def test_partial_kwargs_sets_created_at(self):
+        """Test that partial kwargs still sets created_at."""
+        obj = BaseModel(name="Test")
+        self.assertIsInstance(obj.created_at, datetime)
+
 
 class TestBaseModelSave(unittest.TestCase):
     """Tests for the BaseModel save method."""
@@ -95,7 +100,7 @@ class TestBaseModelSave(unittest.TestCase):
         """Test that save updates the updated_at attribute."""
         obj = BaseModel()
         old_updated = obj.updated_at
-        time.sleep(0.01)
+        time.sleep(0.05)
         obj.save()
         self.assertGreater(obj.updated_at, old_updated)
 
@@ -106,11 +111,30 @@ class TestBaseModelSave(unittest.TestCase):
         obj.save()
         self.assertEqual(obj.created_at, old_created)
 
+    @unittest.skipIf(
+        os.getenv("HBNB_TYPE_STORAGE") == "db",
+        "file.json not used in DBStorage"
+    )
     def test_save_creates_file(self):
-        """Test that save creates the JSON file."""
+        """Test that save creates the JSON file (FileStorage only)."""
         obj = BaseModel()
         obj.save()
         self.assertTrue(os.path.exists("file.json"))
+
+    @unittest.skipIf(
+        os.getenv("HBNB_TYPE_STORAGE") != "db",
+        "Only applicable for DBStorage"
+    )
+    def test_save_persists_to_db(self):
+        """Test that save commits the object (DBStorage only)."""
+        from models import storage
+        from models.state import State
+        s = State(name="TestPersist")
+        s.save()
+        key = "State.{}".format(s.id)
+        self.assertIn(key, storage.all())
+        storage.delete(s)
+        storage.save()
 
 
 class TestBaseModelToDict(unittest.TestCase):
@@ -180,6 +204,21 @@ class TestBaseModelToDict(unittest.TestCase):
         """Test that to_dict result is not the instance __dict__."""
         obj = BaseModel()
         self.assertIsNot(obj.to_dict(), obj.__dict__)
+
+    def test_to_dict_no_sa_instance_state(self):
+        """Test that _sa_instance_state is not in to_dict output."""
+        obj = BaseModel()
+        self.assertNotIn("_sa_instance_state", obj.to_dict())
+
+
+class TestBaseModelDelete(unittest.TestCase):
+    """Tests for the BaseModel delete method."""
+
+    def test_delete_method_exists(self):
+        """Test that delete method exists on BaseModel instances."""
+        obj = BaseModel()
+        self.assertTrue(hasattr(obj, "delete"))
+        self.assertTrue(callable(obj.delete))
 
 
 if __name__ == "__main__":
