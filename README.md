@@ -5,7 +5,7 @@
 | Name | GitHub |
 |------|--------|
 | Gania Kayumba | [Gania-Isaro](https://github.com/Gania-Isaro) |
-| Jessica Bizima | [Jessica-Bizima](https://github.com/Jessica-Bizima) |
+| Jessica Bizima | _ |
 
 ## Description
 

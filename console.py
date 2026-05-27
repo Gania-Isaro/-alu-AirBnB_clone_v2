@@ -136,10 +136,11 @@ class HBNBCommand(cmd.Cmd):
             print("** instance id missing **")
             return
         key = "{}.{}".format(args[0], args[1])
-        if key not in storage.all():
+        obj = storage.all().get(key)
+        if obj is None:
             print("** no instance found **")
             return
-        del storage.all()[key]
+        storage.delete(obj)
         storage.save()
 
     def do_all(self, line):

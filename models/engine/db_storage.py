@@ -76,10 +76,15 @@ class DBStorage:
     def new(self, obj):
         """Add the object to the current database session.
 
+        Only adds the object if it is a mapped SQLAlchemy model (i.e. has a
+        __tablename__). Plain BaseModel instances (used only in FileStorage
+        tests) are silently ignored to avoid UnmappedInstanceError.
+
         Args:
             obj: The model instance to add to the session.
         """
-        self.__session.add(obj)
+        if obj is not None and hasattr(obj, "__tablename__"):
+            self.__session.add(obj)
 
     def save(self):
         """Commit all pending changes in the current database session."""
